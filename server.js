@@ -54,6 +54,7 @@ class GatherRound {
         this.io.on( 'connection', socket => {
             const client = new Client( socket, this )
             this.clients.push( client )
+            if ( this.model ) this.pushModel( client )
             if ( this.onConnect ) this.onConnect( client )
             socket.on( 'disconnect', () => {
                 this.clients = this.clients.filter( c => c.socket != socket )
@@ -68,6 +69,27 @@ class GatherRound {
     tellClient ( id, json ) {
         const client = this.getClient( id )
         if ( client ) client.tell( json )
+    }
+    sendModelChange ( key, client ) {
+        const doIt = c => {
+            if ( c.canSee( key ) )
+                c.socket.emit( 'model write', {
+                    key : key,
+                    value : this.model.get( key )
+                } )
+        }
+        if ( client ) { doIt( client ) } else { this.clients.map( doIt ) }
+    }
+    pushModel ( client ) {
+        if ( !this.model ) return
+        client.socket.emit( 'new model' )
+        for ( let key of this.model.keys() )
+            this.sendModelChange( key, client )
+    }
+    setModel ( model ) {
+        this.model = model
+        this.clients.map( client => this.pushModel( client ) )
+        model.changed = key => this.sendModelChange( key )
     }
 }
 
@@ -88,6 +110,7 @@ class Client {
     }
     tell ( json ) { this.socket.emit( 'server message', json ) }
     heard ( json ) { } // subclasses/instances override
+    canSee ( key ) { return true } // subclasses/instances override
 }
 
 module.exports.GatherRound = GatherRound
