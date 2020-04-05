@@ -1,39 +1,60 @@
 
-const app = require( 'express' )()
-const http = require( 'http' ).createServer( app )
+const app = require( 'express' )
+const http = require( 'http' )
 const path = require( 'path' )
-const io = require( 'socket.io' )( http )
+const io = require( 'socket.io' )
 const fs = require( 'fs' )
-
-app.get( '/', ( request, result ) => {
-    result.send(
-`
-<html>
-    <head>
-        <script src='client.js'></script>
-        <script>connect()</script>
-    </head>
-    <body>
-        <p>Empty page.</p>
-    </body>
-</html>
-` )
-} )
 
 const socketClient = fs.readFileSync( path.join(
     __dirname, 'node_modules', 'socket.io-client', 'dist', 'socket.io.js' ) )
-const myClient = fs.readFileSync( path.join( __dirname, 'client.js' ) )
-app.get( '/client.js', ( request, result ) => {
-    result.send( `${socketClient}\n\n${myClient}` )
-} )
+const gatherClient = fs.readFileSync( path.join( __dirname, 'client.js' ) )
 
-io.on( 'connection', socket => {
-    console.log( 'Connection started' )
-    socket.on( 'disconnect', () => {
-        console.log( 'Connection ended' )
-    } )
-} )
+class GatherRound {
+    constructor () {
+        this.app = app()
+        this.http = http.createServer( this.app )
+        this.io = io( this.http )
+        this.port = 80
+        this.setMainPageHTML( '' )
+        this.setClientScriptFile( path.join( __dirname, 'client.js' ) )
+    }
+    setMainPageFile ( absolutePath ) {
+        this.setMainPageHTML( fs.readFileSync( absolutePath ) )
+    }
+    setMainPageHTML ( html ) {
+        const toInject = '<script src="client.js"></script>'
+        if ( /<\/body>/i.test( html ) ) {
+            html = html.replace( /<\/body>/i, `</body>${toInject}` )
+        } else if ( /<\/html>/i.test( html ) ) {
+            html = html.replace( /<\/html>/i, `${toInject}</html>` )
+        } else {
+            html += toInject
+        }
+        this.mainPage = html
+    }
+    setClientScriptFile ( absolutePath ) {
+        this.setClientScriptJS( fs.readFileSync( absolutePath ) )
+    }
+    setClientScriptJS ( js ) {
+        this.clientScript = `${socketClient}\n\n${gatherClient}\n\n${js}`
+    }
+    start () {
+        this.app.get( '/', ( request, result ) => {
+            result.send( this.mainPage )
+        } )
+        this.app.get( '/client.js', ( request, result ) => {
+            result.send( this.clientScript )
+        } )
+        this.io.on( 'connection', socket => {
+            if ( this.onConnect ) this.onConnect( socket )
+            socket.on( 'disconnect', () => {
+                if ( this.onDisconnect ) this.onDisconnect( socket )
+            } )
+        } )
+        this.http.listen( this.port, () => {
+            if ( this.onStart ) this.onStart( this.port )
+        } )
+    }
+}
 
-http.listen( 9999, () => {
-    console.log( 'Server started' )
-} )
+module.exports.GatherRound = GatherRound
