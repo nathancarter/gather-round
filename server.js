@@ -19,7 +19,7 @@ class GatherRound {
         this.setClientScriptFile( path.join( __dirname, 'client.js' ) )
     }
     setMainPageFile ( absolutePath ) {
-        this.setMainPageHTML( fs.readFileSync( absolutePath ) )
+        this.setMainPageHTML( String( fs.readFileSync( absolutePath ) ) )
     }
     setMainPageHTML ( html ) {
         const toInject = '<script src="client.js"></script>'
@@ -33,7 +33,7 @@ class GatherRound {
         this.mainPage = html
     }
     setClientScriptFile ( absolutePath ) {
-        this.setClientScriptJS( fs.readFileSync( absolutePath ) )
+        this.setClientScriptJS( String( fs.readFileSync( absolutePath ) ) )
     }
     setClientScriptJS ( js ) {
         this.clientScript = `${socketClient}\n\n${gatherClient}\n\n${js}`
