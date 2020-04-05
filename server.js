@@ -58,11 +58,15 @@ class GatherRound {
             socket.on( 'disconnect', () => {
                 if ( this.onDisconnect ) this.onDisconnect( socket )
             } )
+            socket.on( 'client message', json => {
+                if ( this.onMessage ) this.onMessage( json )
+            } )
         } )
         this.http.listen( this.port, () => {
             if ( this.onStart ) this.onStart( this.port )
         } )
     }
+    tellClient ( socket, json ) { socket.emit( 'server message', json ) }
 }
 
 module.exports.GatherRound = GatherRound
