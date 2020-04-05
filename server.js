@@ -17,6 +17,7 @@ class GatherRound {
         this.port = 80
         this.setMainPageHTML( '' )
         this.setClientScriptFile( path.join( __dirname, 'client.js' ) )
+        this.clients = [ ]
     }
     setMainPageFile ( absolutePath ) {
         this.setMainPageHTML( String( fs.readFileSync( absolutePath ) ) )
@@ -54,19 +55,42 @@ class GatherRound {
             result.send( this.clientScript )
         } )
         this.io.on( 'connection', socket => {
-            if ( this.onConnect ) this.onConnect( socket )
+            const client = new Client( socket, this )
+            this.clients.push( client )
+            if ( this.onConnect ) this.onConnect( client )
             socket.on( 'disconnect', () => {
-                if ( this.onDisconnect ) this.onDisconnect( socket )
-            } )
-            socket.on( 'client message', json => {
-                if ( this.onMessage ) this.onMessage( json )
+                this.clients = this.clients.filter( c => c.socket != socket )
+                if ( this.onDisconnect ) this.onDisconnect( client )
             } )
         } )
         this.http.listen( this.port, () => {
             if ( this.onStart ) this.onStart( this.port )
         } )
     }
-    tellClient ( socket, json ) { socket.emit( 'server message', json ) }
+    getClient ( id ) { return this.clients.find( c => c.id === `${id}` ) }
+    tellClient ( id, json ) {
+        const client = this.getClient( id )
+        if ( client ) client.tell( json )
+    }
+}
+
+class Client {
+    constructor ( socket, server ) {
+        this.socket = socket
+        this.server = server
+        this.id = null
+        socket.on( 'client message', json => this.heard( json ) )
+        socket.on( 'request id', id => this.setId( id ) )
+    }
+    setId ( id ) {
+        const existing = this.server.getClient( id )
+        const change = !existing || existing === this
+        if ( change ) this.id = `${id}`
+        this.socket.emit( 'set id', `${id}` )
+        return change
+    }
+    tell ( json ) { this.socket.emit( 'server message', json ) }
+    heard ( json ) { } // subclasses/instances override
 }
 
 module.exports.GatherRound = GatherRound
