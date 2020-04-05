@@ -1,9 +1,9 @@
 
-let app = require( 'express' )()
-let http = require( 'http' ).createServer( app )
-let path = require( 'path' )
-let io = require( 'socket.io' )( http )
-let fs = require( 'fs' )
+const app = require( 'express' )()
+const http = require( 'http' ).createServer( app )
+const path = require( 'path' )
+const io = require( 'socket.io' )( http )
+const fs = require( 'fs' )
 
 app.get( '/', ( request, result ) => {
     result.send(
