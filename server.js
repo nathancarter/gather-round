@@ -8,6 +8,7 @@ const fs = require( 'fs' )
 const socketClient = fs.readFileSync( path.join(
     __dirname, 'node_modules', 'socket.io-client', 'dist', 'socket.io.js' ) )
 const gatherClient = fs.readFileSync( path.join( __dirname, 'client.js' ) )
+const injection = '[[[INJECTION-FLAG]]]'
 
 class GatherRound {
     constructor () {
@@ -16,43 +17,39 @@ class GatherRound {
         this.io = io( this.http )
         this.port = 80
         this.setMainPageHTML( '' )
-        this.setClientScriptFile( path.join( __dirname, 'client.js' ) )
         this.clients = [ ]
+        this.scripts = [ ]
     }
     setMainPageFile ( absolutePath ) {
         this.setMainPageHTML( String( fs.readFileSync( absolutePath ) ) )
     }
     setMainPageHTML ( html ) {
-        const toInject = `
-            <script src="socket-client.js"></script>
-            <script src="gather-client.js"></script>
-            <script src="user-client.js"></script>
-        `
         if ( /<\/body>/i.test( html ) ) {
-            html = html.replace( /<\/body>/i, `</body>${toInject}` )
+            html = html.replace( /<\/body>/i, `</body>${injection}` )
         } else if ( /<\/html>/i.test( html ) ) {
-            html = html.replace( /<\/html>/i, `${toInject}</html>` )
+            html = html.replace( /<\/html>/i, `${injection}</html>` )
         } else {
-            html += toInject
+            html += injection
         }
         this.mainPage = html
     }
-    setClientScriptFile ( absolutePath ) {
-        this.setClientScriptJS( String( fs.readFileSync( absolutePath ) ) )
-    }
-    setClientScriptJS ( js ) { this.clientScript = js }
+    addScript ( filename ) { this.scripts.push( filename ) }
     start () {
-        this.app.get( '/', ( request, result ) => {
-            result.send( this.mainPage )
+        const allScripts = [ 'socket-client.js', 'gather-client.js' ]
+        this.scripts.map( ( filename, index ) => {
+            allScripts.push( `user-script-${index}.js` )
+            this.app.get( `/user-script-${index}.js`, ( request, result ) => {
+                result.sendFile( filename )
+            } )
         } )
+        const mainPage = this.mainPage.replace( injection,
+            allScripts.map( s => `<script src='${s}'></script>` ).join( '\n' ) )
+        this.app.get( '/', ( request, result ) => { result.send( mainPage ) } )
         this.app.get( '/socket-client.js', ( request, result ) => {
             result.send( socketClient )
         } )
         this.app.get( '/gather-client.js', ( request, result ) => {
             result.send( gatherClient )
-        } )
-        this.app.get( '/user-client.js', ( request, result ) => {
-            result.send( this.clientScript )
         } )
         this.io.on( 'connection', socket => {
             const client = new Client( socket, this )
