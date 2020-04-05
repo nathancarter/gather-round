@@ -1,0 +1,11 @@
+{
+  "name": "gather-round",
+  "version": "0.1.0",
+  "description": "Framework for simple shared online experiences",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "ncarter@bentley.edu",
+  "license": "ISC"
+}
