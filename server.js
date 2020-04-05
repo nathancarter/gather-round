@@ -11,6 +11,7 @@ app.get( '/', ( request, result ) => {
 <html>
     <head>
         <script src='client.js'></script>
+        <script>connect()</script>
     </head>
     <body>
         <p>Empty page.</p>

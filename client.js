@@ -1,2 +1,6 @@
 
-let server = io()
+let server = null
+
+const connect = () => {
+    server = io()
+}
