@@ -22,7 +22,11 @@ class GatherRound {
         this.setMainPageHTML( String( fs.readFileSync( absolutePath ) ) )
     }
     setMainPageHTML ( html ) {
-        const toInject = '<script src="client.js"></script>'
+        const toInject = `
+            <script src="socket-client.js"></script>
+            <script src="gather-client.js"></script>
+            <script src="user-client.js"></script>
+        `
         if ( /<\/body>/i.test( html ) ) {
             html = html.replace( /<\/body>/i, `</body>${toInject}` )
         } else if ( /<\/html>/i.test( html ) ) {
@@ -35,14 +39,18 @@ class GatherRound {
     setClientScriptFile ( absolutePath ) {
         this.setClientScriptJS( String( fs.readFileSync( absolutePath ) ) )
     }
-    setClientScriptJS ( js ) {
-        this.clientScript = `${socketClient}\n\n${gatherClient}\n\n${js}`
-    }
+    setClientScriptJS ( js ) { this.clientScript = js }
     start () {
         this.app.get( '/', ( request, result ) => {
             result.send( this.mainPage )
         } )
-        this.app.get( '/client.js', ( request, result ) => {
+        this.app.get( '/socket-client.js', ( request, result ) => {
+            result.send( socketClient )
+        } )
+        this.app.get( '/gather-client.js', ( request, result ) => {
+            result.send( gatherClient )
+        } )
+        this.app.get( '/user-client.js', ( request, result ) => {
             result.send( this.clientScript )
         } )
         this.io.on( 'connection', socket => {
