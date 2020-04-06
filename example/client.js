@@ -1,5 +1,10 @@
 
-connect()
+window.onload = () => {
+    document.getElementById( 'send' ).addEventListener( 'click', event => {
+        say( { chat : document.getElementById( 'nextChat' ).value } )
+    } )
+    connect()
+}
 
 ModelClass = MapModel
 
@@ -18,7 +23,3 @@ window.heard = msg => {
         () => say( `Now I have ID ${askFor}.` ),
         () => say( `Aw, I wanted to be ${askFor}.` ) )
 }
-
-document.getElementById( 'send' ).addEventListener( 'click', event => {
-    say( { chat : document.getElementById( 'nextChat' ).value } )
-} )

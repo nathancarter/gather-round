@@ -24,12 +24,14 @@ class GatherRound {
         this.setMainPageHTML( String( fs.readFileSync( absolutePath ) ) )
     }
     setMainPageHTML ( html ) {
-        if ( /<\/body>/i.test( html ) ) {
-            html = html.replace( /<\/body>/i, `</body>${injection}` )
-        } else if ( /<\/html>/i.test( html ) ) {
-            html = html.replace( /<\/html>/i, `${injection}</html>` )
+        if ( /<head>/i.test( html ) ) {
+            html = html.replace( /<head>/i, `<head>${injection}` )
+        } else if ( /<html>/i.test( html ) ) {
+            html = html.replace( /<html>/i, `<html>${injection}` )
+        } else if ( /<body>/i.test( html ) ) {
+            html = html.replace( /<body>/i, `${injection}<body>` )
         } else {
-            html += injection
+            html = injection + html
         }
         this.mainPage = html
     }
