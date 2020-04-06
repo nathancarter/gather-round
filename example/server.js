@@ -10,23 +10,22 @@ server.setModel( model )
 model.set( 'chats', [ ] )
 
 server.onStart = port => console.log( `Started on port ${port}` )
-server.onConnect = client => {
-    let counter = 0
-    while ( server.getClient( counter ) ) counter++
-    client.setId( counter )
-    console.log( `Connected client ${client.id}` )
-    client.tell( 'Can you hear me?' )
-    client.heard = msg => {
+server.onConnect = socket => {
+    console.log( `Connected client ${socket.id}` )
+    socket.say( 'Can you hear me?' )
+    socket.heard = msg => {
         if ( msg.hasOwnProperty( 'chat' ) ) {
             model.set( 'chats', [ ...model.get( 'chats' ),
-                                  `${client.id} says: ${msg.chat}` ] )
+                                  `${socket.id} says: ${msg.chat}` ] )
+        } else {
+            console.log( `Heard from ${socket.id}: ${msg}` )
         }
     }
-    console.log( 'Current client IDs:', server.clients.map( c => c.id ) )
+    console.log( 'Current client IDs:', server.sockets.map( c => c.id ) )
 }
-server.onDisconnect = client => {
-    console.log( `Disconnected client ${client.id}` )
-    console.log( 'Current client IDs:', server.clients.map( c => c.id ) )
+server.onDisconnect = socket => {
+    console.log( `Disconnected client ${socket.id}` )
+    console.log( 'Current client IDs:', server.sockets.map( c => c.id ) )
 }
 
 server.addScript( path.join( __dirname, '..', 'map-model.js' ) )

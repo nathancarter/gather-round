@@ -17,7 +17,7 @@ class GatherRound {
         this.io = io( this.http )
         this.port = 80
         this.setMainPageHTML( '' )
-        this.clients = [ ]
+        this.sockets = [ ]
         this.scripts = [ ]
     }
     setMainPageFile ( absolutePath ) {
@@ -54,65 +54,45 @@ class GatherRound {
             result.send( gatherClient )
         } )
         this.io.on( 'connection', socket => {
-            const client = new Client( socket, this )
-            this.clients.push( client )
-            if ( this.model ) this.pushModel( client )
-            if ( this.onConnect ) this.onConnect( client )
+            socket.gather = this
+            socket.say = function ( msg ) { this.emit( 'server message', msg ) }
+            socket.on( 'client message', msg => {
+                if ( socket.heard ) socket.heard( msg )
+            } )
+            this.sockets.push( socket )
+            if ( this.model ) this.pushModel( socket )
+            if ( this.onConnect ) this.onConnect( socket )
             socket.on( 'disconnect', () => {
-                this.clients = this.clients.filter( c => c.socket != socket )
-                if ( this.onDisconnect ) this.onDisconnect( client )
+                this.sockets = this.sockets.filter( c => c != socket )
+                if ( this.onDisconnect ) this.onDisconnect( socket )
             } )
         } )
         this.http.listen( this.port, () => {
             if ( this.onStart ) this.onStart( this.port )
         } )
     }
-    getClient ( id ) { return this.clients.find( c => c.id === `${id}` ) }
-    tellClient ( id, json ) {
-        const client = this.getClient( id )
-        if ( client ) client.tell( json )
-    }
-    sendModelChange ( key, client ) {
-        const doIt = c => {
-            if ( c.canSee( key ) )
-                c.socket.emit( 'model write', {
+    canSee ( socket, key ) { return true } // subclasses/instances may override
+    sendModelChange ( key, socket ) {
+        const doIt = s => {
+            if ( this.canSee( s, key ) )
+                s.emit( 'model write', {
                     key : key,
                     value : this.model.get( key )
                 } )
         }
-        if ( client ) { doIt( client ) } else { this.clients.map( doIt ) }
+        if ( socket ) { doIt( socket ) } else { this.sockets.map( doIt ) }
     }
-    pushModel ( client ) {
+    pushModel ( socket ) {
         if ( !this.model ) return
-        client.socket.emit( 'new model' )
+        socket.emit( 'new model' )
         for ( let key of this.model.keys() )
-            this.sendModelChange( key, client )
+            this.sendModelChange( key, socket )
     }
     setModel ( model ) {
         this.model = model
-        this.clients.map( client => this.pushModel( client ) )
+        this.sockets.map( client => this.pushModel( socket ) )
         model.changed = key => this.sendModelChange( key )
     }
-}
-
-class Client {
-    constructor ( socket, server ) {
-        this.socket = socket
-        this.server = server
-        this.id = null
-        socket.on( 'client message', json => this.heard( json ) )
-        socket.on( 'request id', id => this.setId( id ) )
-    }
-    setId ( id ) {
-        const existing = this.server.getClient( id )
-        const change = !existing || existing === this
-        if ( change ) this.id = `${id}`
-        this.socket.emit( 'set id', `${id}` )
-        return change
-    }
-    tell ( json ) { this.socket.emit( 'server message', json ) }
-    heard ( json ) { } // subclasses/instances override
-    canSee ( key ) { return true } // subclasses/instances override
 }
 
 module.exports.GatherRound = GatherRound
