@@ -23,5 +23,9 @@ const say = msg => {
     socket.emit( 'client message', msg )
 }
 
+const randomHash = () =>
+    new Date().getTime().toString( 36 ) +
+    parseInt( `${Math.random()}`.substring( 2 ) ).toString( 36 )
+
 window.heard = null // replace with your listener
 window.changed = null // replace with your listener
