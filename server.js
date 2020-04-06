@@ -10,7 +10,7 @@ const socketClient = fs.readFileSync( path.join(
 const gatherClient = fs.readFileSync( path.join( __dirname, 'client.js' ) )
 const injection = '[[[INJECTION-FLAG]]]'
 
-class GatherRound {
+class GatherLobby {
     constructor () {
         this.app = app()
         this.http = http.createServer( this.app )
@@ -95,4 +95,4 @@ class GatherRound {
     }
 }
 
-module.exports.GatherRound = GatherRound
+module.exports.GatherLobby = GatherLobby

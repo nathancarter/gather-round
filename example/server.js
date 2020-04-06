@@ -1,9 +1,9 @@
 
-const { GatherRound } = require( '../server' )
+const { GatherLobby } = require( '../server' )
 const { MapModel } = require( '../map-model' )
 const path = require( 'path' )
 
-const server = new GatherRound()
+const server = new GatherLobby()
 
 const model = new MapModel()
 server.setModel( model )
